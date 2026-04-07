@@ -34,18 +34,6 @@ export default function DashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const supabase = createClient();
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const workspaceId = params.get("workspace");
-
-    if (workspaceId) {
-      loadWorkspace(workspaceId);
-      loadTransactions(workspaceId);
-    } else {
-      loadFirstWorkspace();
-    }
-  }, []);
-
   const loadWorkspace = async (id: string) => {
     const { data } = await supabase
       .from("workspaces")
@@ -54,6 +42,22 @@ export default function DashboardPage() {
       .single();
     
     if (data) setWorkspace(data);
+  };
+
+  const loadTransactions = async (workspaceId: string) => {
+    const { data } = await supabase
+      .from("transactions")
+      .select(`
+        *,
+        category:categories(*),
+        paidBy:users(*)
+      `)
+      .eq("workspace_id", workspaceId)
+      .order("date", { ascending: false })
+      .limit(10);
+
+    if (data) setTransactions(data);
+    setLoading(false);
   };
 
   const loadFirstWorkspace = async () => {
@@ -79,21 +83,17 @@ export default function DashboardPage() {
     }
   };
 
-  const loadTransactions = async (workspaceId: string) => {
-    const { data } = await supabase
-      .from("transactions")
-      .select(`
-        *,
-        category:categories(*),
-        paidBy:users(*)
-      `)
-      .eq("workspace_id", workspaceId)
-      .order("date", { ascending: false })
-      .limit(10);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const workspaceId = params.get("workspace");
 
-    if (data) setTransactions(data);
-    setLoading(false);
-  };
+    if (workspaceId) {
+      loadWorkspace(workspaceId);
+      loadTransactions(workspaceId);
+    } else {
+      loadFirstWorkspace();
+    }
+  }, []);
 
   const handleTransactionAdded = () => {
     setShowModal(false);
