@@ -17,11 +17,7 @@ export default function WorkspacePage() {
   const [newWorkspaceType, setNewWorkspaceType] = useState<"PERSONAL" | "SHARED">("PERSONAL");
   const supabase = createClient();
 
-  useEffect(() => {
-    loadWorkspaces();
-  }, []);
-
-  const loadWorkspaces = async () => {
+  async function loadWorkspaces() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       window.location.href = "/login";
@@ -40,11 +36,17 @@ export default function WorkspacePage() {
       .eq("user_id", user.id);
 
     if (data) {
-      const ws = data.map((d: any) => d.workspace as unknown as Workspace).filter(Boolean);
+      const ws: Workspace[] = data
+        .map((d: { workspace?: Workspace }) => d.workspace)
+        .filter((w): w is Workspace => w !== null && w !== undefined);
       setWorkspaces(ws);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    loadWorkspaces();
+  }, []);
 
   const createWorkspace = async () => {
     if (!newWorkspaceName.trim()) return;
@@ -53,7 +55,7 @@ export default function WorkspacePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: ws, error: wsError } = await supabase
+    const { data: ws, error } = await supabase
       .from("workspaces")
       .insert({
         name: newWorkspaceName,
@@ -62,8 +64,8 @@ export default function WorkspacePage() {
       .select()
       .single();
 
-    if (wsError) {
-      console.error("Error creating workspace:", wsError);
+    if (error) {
+      console.error("Error creating workspace:", error.message);
       setCreating(false);
       return;
     }
@@ -77,14 +79,14 @@ export default function WorkspacePage() {
     window.location.href = `/dashboard?workspace=${ws.id}`;
   };
 
-  const selectWorkspace = (workspaceId: string) => {
-    window.location.href = `/dashboard?workspace=${workspaceId}`;
-  };
+  function selectWorkspace(workspaceId: string) {
+    window.location.assign(`/dashboard?workspace=${workspaceId}`);
+  }
 
-  const handleLogout = async () => {
+  async function handleLogout() {
     await supabase.auth.signOut();
-    window.location.href = "/login";
-  };
+    window.location.assign("/login");
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">

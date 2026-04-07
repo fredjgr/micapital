@@ -29,11 +29,7 @@ export default function TransactionModal({
   const [error, setError] = useState("");
   const supabase = createClient();
 
-  useEffect(() => {
-    loadCategories();
-  }, [workspaceId]);
-
-  const loadCategories = async () => {
+  async function loadCategories() {
     const { data } = await supabase
       .from("categories")
       .select("*")
@@ -45,9 +41,9 @@ export default function TransactionModal({
     } else {
       await createDefaultCategories();
     }
-  };
+  }
 
-  const createDefaultCategories = async () => {
+  async function createDefaultCategories() {
     const defaults = [
       { name: "Alimentación", icon: "restaurant", color: "#61c2ff" },
       { name: "Transporte", icon: "directions_car", color: "#c180ff" },
@@ -65,7 +61,11 @@ export default function TransactionModal({
 
     await supabase.from("categories").insert(toInsert);
     loadCategories();
-  };
+  }
+
+  useEffect(() => {
+    loadCategories();
+  }, [workspaceId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,15 +101,6 @@ export default function TransactionModal({
     } else {
       onSuccess();
     }
-  };
-
-  const formatCurrency = (value: string) => {
-    const num = parseFloat(value.replace(",", "."));
-    if (isNaN(num)) return "";
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(num);
   };
 
   return (

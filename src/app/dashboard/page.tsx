@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Sidebar from "@/components/sidebar";
 import BottomNav from "@/components/bottom-nav";
@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const supabase = createClient();
 
-  const loadWorkspace = async (id: string) => {
+  const loadWorkspace = useCallback(async (id: string) => {
     const { data } = await supabase
       .from("workspaces")
       .select("*")
@@ -42,9 +42,9 @@ export default function DashboardPage() {
       .single();
     
     if (data) setWorkspace(data);
-  };
+  }, []);
 
-  const loadTransactions = async (workspaceId: string) => {
+  const loadTransactions = useCallback(async (workspaceId: string) => {
     const { data } = await supabase
       .from("transactions")
       .select(`
@@ -58,9 +58,9 @@ export default function DashboardPage() {
 
     if (data) setTransactions(data);
     setLoading(false);
-  };
+  }, []);
 
-  const loadFirstWorkspace = async () => {
+  const loadFirstWorkspace = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       window.location.href = "/login";
@@ -75,13 +75,13 @@ export default function DashboardPage() {
       .single();
 
     if (data?.workspace) {
-      const ws = data.workspace as unknown as Workspace;
+      const ws = data.workspace as Workspace;
       setWorkspace(ws);
       loadTransactions(ws.id);
     } else {
       window.location.href = "/workspace";
     }
-  };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -93,7 +93,7 @@ export default function DashboardPage() {
     } else {
       loadFirstWorkspace();
     }
-  }, []);
+  }, [loadWorkspace, loadTransactions, loadFirstWorkspace]);
 
   const handleTransactionAdded = () => {
     setShowModal(false);
